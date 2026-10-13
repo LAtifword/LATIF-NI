@@ -20,7 +20,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          EXPECTED=8
+          EXPECTED=9
           FOUND=$(find . -maxdepth 1 -type f -name '.latif-payload.part-*' | wc -l)
           if [ "$FOUND" -ne "$EXPECTED" ]; then
             echo "Waiting for payload chunks: $FOUND/$EXPECTED"
