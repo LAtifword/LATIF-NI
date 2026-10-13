@@ -20,10 +20,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -f .latif-reconstruction.tar.gz.b64
-          base64 -d .latif-reconstruction.tar.gz.b64 > /tmp/latif-project.tar.gz
+          EXPECTED=8
+          FOUND=$(find . -maxdepth 1 -type f -name '.latif-payload.part-*' | wc -l)
+          if [ "$FOUND" -ne "$EXPECTED" ]; then
+            echo "Waiting for payload chunks: $FOUND/$EXPECTED"
+            exit 0
+          fi
+          cat .latif-payload.part-* | base64 -d > /tmp/latif-project.tar.gz
+          tar -tzf /tmp/latif-project.tar.gz >/dev/null
           tar -xzf /tmp/latif-project.tar.gz -C .
-          rm -f .latif-reconstruction.tar.gz.b64 project.zip .github/workflows/bootstrap-reconstruct.yml .github/workflows/blank.yml
+          rm -f .latif-payload.part-* .latif-reconstruction.tar.gz.b64 project.zip .github/workflows/bootstrap-reconstruct.yml .github/workflows/blank.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
