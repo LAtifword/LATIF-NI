@@ -1,0 +1,37 @@
+name: Reconstruct LATIF NI OS source
+
+on:
+  push:
+    branches: ["reconstruct/latif-ni-os-v1"]
+
+permissions:
+  contents: write
+
+jobs:
+  unpack-and-commit:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: reconstruct/latif-ni-os-v1
+          fetch-depth: 0
+      - name: Reconstruct canonical project tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECTED=9
+          FOUND=$(find . -maxdepth 1 -type f -name '.latif-payload.part-*' | wc -l)
+          if [ "$FOUND" -ne "$EXPECTED" ]; then
+            echo "Waiting for payload chunks: $FOUND/$EXPECTED"
+            exit 0
+          fi
+          cat .latif-payload.part-* | base64 -d > /tmp/latif-project.tar.gz
+          tar -tzf /tmp/latif-project.tar.gz >/dev/null
+          tar -xzf /tmp/latif-project.tar.gz -C .
+          rm -f .latif-payload.part-* .latif-reconstruction.tar.gz.b64 project.zip .github/workflows/bootstrap-reconstruct.yml .github/workflows/blank.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: reconstruct LATIF NI OS application" || exit 0
+          git push origin HEAD:reconstruct/latif-ni-os-v1
