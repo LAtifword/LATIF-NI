@@ -1,0 +1,53 @@
+name: LATIF Android APK
+on:
+  push:
+    paths:
+      - ".github/workflows/latif-embedded-apk.yml"
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - run: |
+          mkdir -p latif-app
+          base64 -d android-offline/source.zip.b64 > /tmp/latif.zip
+          unzip -q /tmp/latif.zip -d latif-app
+      - run: |
+          python3 -m pip install gdown
+          mkdir -p latif-app/assets/models
+          gdown 1VGk8QI8gKj193FxjHicH7WrKc0jDFMQ1 -O latif-app/assets/models/latif-qwen2.5-0.5b-q4_k_m.gguf
+          echo "4c5deec6759705c82c4ec59e8611383ed1c5fd1badae6fbd104fbec891480a76  latif-app/assets/models/latif-qwen2.5-0.5b-q4_k_m.gguf" | sha256sum -c -
+      - run: |
+          cd latif-app
+          npm install
+          npx expo prebuild --platform android --non-interactive
+          cd android
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('app/build.gradle')
+          s=p.read_text()
+          s=s.replace('signingConfig signingConfigs.debug\n', 'signingConfig signingConfigs.debug\n')
+          if 'release {' in s:
+              before,after=s.split('release {',1)
+              if 'signingConfig signingConfigs.debug' not in after.split('}',1)[0]:
+                  s=before+'release {\n            signingConfig signingConfigs.debug\n'+after
+          p.write_text(s)
+          PY
+          ./gradlew assembleRelease --no-daemon
+          APK=app/build/outputs/apk/release/app-release.apk
+          test -s "$APK"
+          unzip -l "$APK" | tee /tmp/latif-apk-contents.txt
+          grep -q 'index.android.bundle' /tmp/latif-apk-contents.txt
+          grep -qi 'gguf' /tmp/latif-apk-contents.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LATIF-OFFLINE-APK
+          path: latif-app/android/app/build/outputs/apk/release/app-release.apk
