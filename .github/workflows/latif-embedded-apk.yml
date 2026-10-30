@@ -30,8 +30,24 @@ jobs:
           npm install
           npx expo prebuild --platform android --non-interactive
           cd android
-          ./gradlew assembleDebug
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('app/build.gradle')
+          s=p.read_text()
+          s=s.replace('signingConfig signingConfigs.debug\n', 'signingConfig signingConfigs.debug\n')
+          if 'release {' in s:
+              before,after=s.split('release {',1)
+              if 'signingConfig signingConfigs.debug' not in after.split('}',1)[0]:
+                  s=before+'release {\n            signingConfig signingConfigs.debug\n'+after
+          p.write_text(s)
+          PY
+          ./gradlew assembleRelease --no-daemon
+          APK=app/build/outputs/apk/release/app-release.apk
+          test -s "$APK"
+          unzip -l "$APK" | tee /tmp/latif-apk-contents.txt
+          grep -q 'index.android.bundle' /tmp/latif-apk-contents.txt
+          grep -qi 'gguf' /tmp/latif-apk-contents.txt
       - uses: actions/upload-artifact@v4
         with:
           name: LATIF-OFFLINE-APK
-          path: latif-app/android/app/build/outputs/apk/debug/app-debug.apk
+          path: latif-app/android/app/build/outputs/apk/release/app-release.apk
