@@ -21,7 +21,7 @@ These checks validate the IME configuration and component contracts. They are no
 
 ## Build and validation
 
-The workflow at `.github/workflows/latif-embedded-apk.yml` downloads the existing GGUF, validates its SHA-256, runs Expo prebuild, and assembles a release APK. To reproduce on an Android build machine with Node 22, JDK 17, Android SDK/NDK, and the model in `assets/models/`:
+The workflow at `.github/workflows/latif-embedded-apk.yml` retrieves the GGUF from the already validated APK artifact of run `41063568398`, extracts only the model, validates its SHA-256, then runs Expo prebuild and assembles a release APK. This avoids committing or republishing the model. The old Google Drive link currently rejects unauthenticated CI downloads; the reference artifact is retained until 2027-01-28 and the run ID must be refreshed from a later successful build before it expires. To reproduce locally on an Android build machine with Node 22, JDK 17, Android SDK/NDK, and the model in `assets/models/`:
 
 ```sh
 npm ci

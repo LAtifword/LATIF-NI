@@ -8,6 +8,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -20,10 +23,25 @@ jobs:
       - run: |
           mkdir -p latif-app
           cp -a android-offline/app/. latif-app/
-      - run: |
-          python3 -m pip install gdown
+      - name: Download reference APK with verified embedded model
+        uses: actions/download-artifact@v4
+        with:
+          name: LATIF-OFFLINE-APK
+          run-id: 41063568398
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          path: /tmp/latif-reference
+      - name: Extract and verify original model
+        run: |
           mkdir -p latif-app/assets/models
-          gdown 1VGk8QI8gKj193FxjHicH7WrKc0jDFMQ1 -O latif-app/assets/models/latif-qwen2.5-0.5b-q4_k_m.gguf
+          python3 - <<'PY'
+          from zipfile import ZipFile
+          source='/tmp/latif-reference/app-release.apk'
+          target='latif-app/assets/models/latif-qwen2.5-0.5b-q4_k_m.gguf'
+          with ZipFile(source) as apk, apk.open('res/Y3.gguf') as model, open(target, 'wb') as out:
+              while chunk := model.read(8 * 1024 * 1024):
+                  out.write(chunk)
+          PY
           echo "4c5deec6759705c82c4ec59e8611383ed1c5fd1badae6fbd104fbec891480a76  latif-app/assets/models/latif-qwen2.5-0.5b-q4_k_m.gguf" | sha256sum -c -
       - run: |
           cd latif-app
