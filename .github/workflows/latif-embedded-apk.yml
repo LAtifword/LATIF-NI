@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - ".github/workflows/latif-embedded-apk.yml"
+      - "android-offline/app/**"
   workflow_dispatch:
 jobs:
   build:
@@ -18,8 +19,7 @@ jobs:
           java-version: "17"
       - run: |
           mkdir -p latif-app
-          base64 -d android-offline/source.zip.b64 > /tmp/latif.zip
-          unzip -q /tmp/latif.zip -d latif-app
+          cp -a android-offline/app/. latif-app/
       - run: |
           python3 -m pip install gdown
           mkdir -p latif-app/assets/models
@@ -27,8 +27,11 @@ jobs:
           echo "4c5deec6759705c82c4ec59e8611383ed1c5fd1badae6fbd104fbec891480a76  latif-app/assets/models/latif-qwen2.5-0.5b-q4_k_m.gguf" | sha256sum -c -
       - run: |
           cd latif-app
-          npm install
-          npx expo prebuild --platform android --non-interactive
+          npm ci
+          npm run model:verify
+          npm run test:keyboard
+          npm run check
+          CI=1 npx expo prebuild --platform android
           cd android
           python3 - <<'PY'
           from pathlib import Path

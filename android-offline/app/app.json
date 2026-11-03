@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "LATIF Offline AI",
+    "slug": "latif-lora-android",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "android": {
+      "package": "com.latif.offlineai",
+      "versionCode": 1,
+      "softwareKeyboardLayoutMode": "resize"
+    },
+    "plugins": [
+      ["expo-build-properties", {"android": {"minSdkVersion": 24, "buildArchs": ["arm64-v8a"]}}],
+      ["llama.rn", {"forceCxx20": true, "enableOpenCL": false}]
+    ]
+  }
+}
